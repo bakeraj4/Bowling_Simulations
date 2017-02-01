@@ -35,4 +35,10 @@
 *.vcxproj
 *.tlog
 *.ilk
+*.log
 *.pdb
+*.opensdf
+*.suo
+*.filters
+*.idb
+*.user
