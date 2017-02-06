@@ -7,6 +7,12 @@
 #pragma once
 
 /**
+    This function is used to count how many ball 1's are in a provided
+    distribution. The return type is of type double so composition percentages
+    can be made easier.
+    @param m - the ball 1 distribution to count how many ball 1's compose the
+    distribution
+    @return size - the number of ball 1's that are in distribution.
 */
 double getSizeofB1Map(Ball1Map& m) {
     double size = 0.0;
@@ -19,18 +25,25 @@ double getSizeofB1Map(Ball1Map& m) {
 }
 
 /**
+    This function is used to count how many ball 2's are in a provided
+    distribution. The return type is of type double so composition percentages
+    can be made easier.
+    @param m - the ball 2 distribution to count how many ball 2's compose the
+    distribution
+    @return size - the number of ball 2's that are in distribution.
 */
 double getSizeofB2Map(Ball2Map& m) {
     double size = 0.0;
     for (int b1_count = 0; b1_count < STRIKE; ++b1_count) {
         std::map<std::vector<unsigned int>, int> possibleBall2s;
-        for (std::map<Ball2MapKey, int>::iterator it = m[b1_count].begin(); it != m[b1_count].end(); ++it) {
+        for (std::map<Ball2MapKey, int>::iterator it = m[b1_count].begin();
+            it != m[b1_count].end(); ++it) {
+
             std::vector<unsigned int> pins;
             for (int i = 0; i < it->first.second.size(); ++i) {
                 pins.push_back(it->first.second[i]);
             }
             possibleBall2s[pins] = it->second;
-            // b/c unique key we know that no other of the second part of the key can be added
             size += possibleBall2s[pins];
         }
     }
@@ -38,12 +51,31 @@ double getSizeofB2Map(Ball2Map& m) {
 }
 
 /**
+    This function is is used to compare two ball 1 distributions. If a ball 1
+    that has a count of 9 and leaves a 10 pin makes up X% in distribution A
+    then it should be X±err% in B. And the same for the other ball 1's. If all
+    of the ball 1's pass then the two distributions are considered to be the
+    same. This function is intended to be used to compare a distribution
+    created from randomly constructed games to the orgional distribution.
+    @param inputB1Map - the origonal ball 1 distribution
+    @param iB1MapSize - the size of the origonal ball 1 distribution
+    @param outputB1Map - the distribution created from randomly generated games
+    @param oB1MapSize - the size of the distribution created from the randomly
+    generated games.
+    @return true - iff all of the b1's compose the same ratio in both
+    distributions
+    @return false - iff 1+ of the b1's compose a different ratio in the
+    distributions
 */
-bool sameDistB1(Ball1Map& inputB1Map, double iB1MapSize, Ball1Map& outputB1Map, double oB1MapSize) {
+bool sameDistB1(Ball1Map& inputB1Map, double iB1MapSize, Ball1Map& outputB1Map,
+    double oB1MapSize) {
+
     double err = 0.1;
     for (unsigned int i = 0; i < inputB1Map.size(); ++i) {
         for (auto it = inputB1Map[i].begin(); it != inputB1Map[i].end(); ++it) {
-            if (abs((((double) it->second) / iB1MapSize) - (((double) outputB1Map[i][it->first]) / oB1MapSize)) > err ) {
+            double diff = (((double)it->second) / iB1MapSize)
+                - (((double)outputB1Map[i][it->first]) / oB1MapSize);
+            if (abs(diff) > err ) {
                 return false;
             }
         }
@@ -52,12 +84,31 @@ bool sameDistB1(Ball1Map& inputB1Map, double iB1MapSize, Ball1Map& outputB1Map, 
 }
 
 /**
+    This function is is used to compare two ball 2 distributions. If a ball 2
+    that has a count of 1 and converts a 10 pin makes up X% in distribution A
+    then it should be X±err% in B. And the same for the other ball 2's. If all
+    of the ball 2's pass then the two distributions are considered to be the
+    same. This function is intended to be used to compare a distribution
+    created from randomly constructed games to the orgional distribution.
+    @param inputB2Map - the origonal ball 2 distribution
+    @param iB2MapSize - the size of the origonal ball 2 distribution
+    @param outputB2Map - the distribution created from randomly generated games
+    @param oB2MapSize - the size of the distribution created from the randomly
+    generated games.
+    @return true - iff all of the b2's compose the same ratio in both
+    distributions
+    @return false - iff 1+ of the b2's compose a different ratio in the
+    distributions
 */
-bool sameDistB2(Ball2Map& inputB2Map, double iB2MapSize, Ball2Map& outputB2Map, double oB2MapSize) {
+bool sameDistB2(Ball2Map& inputB2Map, double iB2MapSize, Ball2Map& outputB2Map,
+    double oB2MapSize) {
+
     double err = 0.1;
     for (unsigned int i = 0; i < inputB2Map.size(); ++i) {
         for (auto it = inputB2Map[i].begin(); it != inputB2Map[i].end(); ++it) {
-            if (abs((((double) it->second)/ iB2MapSize) - (((double) outputB2Map[i][it->first]) / oB2MapSize)) > err) {
+            double diff = (((double)it->second) / iB2MapSize)
+                - (((double)outputB2Map[i][it->first]) / oB2MapSize);
+            if (abs(diff) > err) {
                 return false;
             }
         }
@@ -69,7 +120,8 @@ bool sameDistB2(Ball2Map& inputB2Map, double iB2MapSize, Ball2Map& outputB2Map, 
 */
 TESTER::TESTER() {
     totalPasses = totalTests = 0;
-    header = "C:\\Users\\Aaron\\Dropbox\\c++\\Bowling_Simulator\\Bowling_Simulations\\testData\\";
+    header = "C:\\Users\\Aaron\\Dropbox\\c++\\Bowling_Simulator\\";
+    header =+ "Bowling_Simulations\\testData\\";
 
     testGame1 = header + "testGame.txt";
     perfectGame = header + "testGamePerfect.txt";
@@ -431,7 +483,8 @@ bool TESTER::testBall2Dist() {
     // test only 1 perfect game
     games.push_back(Game(perfectGame));
     Ball2Map p1 = r.getBall2Totals(games);
-    if (p1[10][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 0) {
+    if (p1[10][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 0) {
         return false;
     }
 
@@ -440,7 +493,8 @@ bool TESTER::testBall2Dist() {
         games.push_back(Game(perfectGame));
     }
     Ball2Map p10 = r.getBall2Totals(games);
-    if (p10[10][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 0) {
+    if (p10[10][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 0) {
         return false;
     }
 
@@ -449,21 +503,25 @@ bool TESTER::testBall2Dist() {
     games.push_back(Game(testGame1));
     Ball2Map g1 = r.getBall2Totals(games);
     // strikes
-    if (g1[10][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 0) {
+    if (g1[10][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 0) {
         return false;
     }
     pinsUp1.push_back(10);
     // 9 count leaving 10 pin. 1 conversion and 1 miss.
-    if (g1[9][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[9][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
     pinsUp2.push_back(10);
-    if (g1[9][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[9][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
     // 9 count leaving 9 pin. 1 make and a fill so only 1
     pinsUp2.clear();
-    if (g1[9][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[9][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
     // 8 count leaving 1 and 2 pins. leaving 2 pin up
@@ -472,7 +530,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(1);
     pinsUp1.push_back(2);
     pinsUp2.push_back(2);
-    if (g1[8][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[8][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
     // 8 count leaving 9 and 10 pins. leaving 10 pin
@@ -481,7 +540,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(9);
     pinsUp1.push_back(10);
     pinsUp2.push_back(10);
-    if (g1[8][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[8][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
     // 7 count leaving 4,7,8 pins. converted.
@@ -490,7 +550,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(4);
     pinsUp1.push_back(7);
     pinsUp1.push_back(8);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
 
@@ -503,7 +564,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(6);
     pinsUp1.push_back(9);
     pinsUp1.push_back(10);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 6) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 6) {
         return false;
     }
 
@@ -512,7 +574,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(3);
     pinsUp1.push_back(6);
     pinsUp1.push_back(10);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 3) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 3) {
         return false;
     }
 
@@ -521,7 +584,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(4);
     pinsUp1.push_back(7);
     pinsUp1.push_back(8);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
 
@@ -534,14 +598,16 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(6);
     pinsUp1.push_back(9);
     pinsUp1.push_back(10);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 3) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 3) {
         return false;
     }
     // "            " 3 miss
     pinsUp2.push_back(6);
     pinsUp2.push_back(9);
     pinsUp2.push_back(10);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 3) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 3) {
         return false;
     }
     // 7 count 3,6,10 1 convert
@@ -550,14 +616,16 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(3);
     pinsUp1.push_back(6);
     pinsUp1.push_back(10);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
     // 7 count 3,6,10 2 miss
     pinsUp2.push_back(3);
     pinsUp2.push_back(6);
     pinsUp2.push_back(10);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 2) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 2) {
         return false;
     }
     // 7 count 4,7,8 1 convert
@@ -566,7 +634,8 @@ bool TESTER::testBall2Dist() {
     pinsUp1.push_back(4);
     pinsUp1.push_back(7);
     pinsUp1.push_back(8);
-    if (g1[7][std::pair<std::vector<unsigned int>, std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
+    if (g1[7][std::pair<std::vector<unsigned int>,
+        std::vector<unsigned int>>(pinsUp1, pinsUp2)] != 1) {
         return false;
     }
 
@@ -589,7 +658,8 @@ bool TESTER::testRandBall1() {
             ++strikeCount;
         }
     }
-    // this game has only strikes so numTest many samples should provide 100 strikes
+    // this game has only strikes so numTest many samples should provide
+    // that many strikes
     if (strikeCount != numTest) {
         return false;
     }
@@ -605,7 +675,8 @@ bool TESTER::testRandBall1() {
             ++strikeCount;
         }
     }
-    // these games have only strikes so numTest many samples should provide 100 strikes
+    // these games have only strikes so numTest many samples should provide
+    // that many strikes
     if (strikeCount != numTest) {
         return false;
     }
@@ -619,7 +690,9 @@ bool TESTER::testRandBall1() {
         ++ball1[sim.getBall1PinsUp()];
     }
 
-    if (abs((((double)ball1[std::vector<unsigned int>()]) / ((double)numTest)) - 0.36) > ERR) {
+    if (abs((((double)ball1[std::vector<unsigned int>()])
+        / ((double)numTest)) - 0.36) > ERR) {
+
         // strikes should be ~36% (4/11)
         return false;
     }
@@ -770,11 +843,13 @@ bool TESTER::testRandBall2() {
     unsigned int strikeCount = 0;
     Simulator sim = Simulator(games);
     for (unsigned int i = 0; i < numTest; ++i){
-        if (sim.getBall2PinsUp(std::vector<unsigned int>()) == std::vector<unsigned int>()) {
+        if (sim.getBall2PinsUp(std::vector<unsigned int>())
+            == std::vector<unsigned int>()) {
             ++strikeCount;
         }
     }
-    // this game has only strikes so numTest many samples should provide 100 strikes
+    // this game has only strikes so numTest many samples should provide
+    // that many strikes
     if (strikeCount != numTest) {
         return false;
     }
@@ -786,11 +861,13 @@ bool TESTER::testRandBall2() {
     strikeCount = 0;
     sim = Simulator(games);
     for (unsigned int i = 0; i < numTest; ++i){
-        if (sim.getBall2PinsUp(std::vector<unsigned int>()) == std::vector<unsigned int>()) {
+        if (sim.getBall2PinsUp(std::vector<unsigned int>())
+            == std::vector<unsigned int>()) {
             ++strikeCount;
         }
     }
-    // this game has only strikes so numTest many samples should provide 100 strikes
+    // this game has only strikes so numTest many samples should provide
+    // that many strikes
     if (strikeCount != numTest) {
         return false;
     }
@@ -801,7 +878,7 @@ bool TESTER::testRandBall2() {
     sim = Simulator(games);
     std::vector<unsigned int> pinsUp;
     std::vector<unsigned int> pinsLeft;
-    // not going to test strikes, done above and that this test is for 2nd ball  
+    // not going to test strikes, done above and that this test is for 2nd ball
     // the 9 count 10 pins was 50% make and miss
     pinsUp.push_back(10);
     double make = 0, miss = 0;
@@ -983,7 +1060,8 @@ bool TESTER::testRandBall2() {
             ++miss;
         }
     }
-    if (abs((2.0 * (make / (double(numTest)))) - (miss / (double(numTest)))) > ERR) {
+    if (abs((2.0 * (make / (double(numTest))))
+        - (miss / (double(numTest)))) > ERR) {
         return false;
     }
     // 7 count 4,7,8
@@ -1005,7 +1083,8 @@ bool TESTER::testRandBall2() {
         return false;
     }
 
-    // fillBall different only than 170 game in that the fill ball is a 9 instead of a 7
+    // fillBall different only than 170 game in that the fill ball
+    // is a 9 instead of a 7
     games.clear();
     games.push_back(Game(diffFillBall));
     sim = Simulator(games);
@@ -1031,7 +1110,8 @@ bool TESTER::testSimulation() {
     input_games.push_back(Game(perfectGame));
     Simulator sim = Simulator(input_games);
     output_games = sim.makeGames(numTrials);
-    // compare the %'s, here the game is perfect games so we can just compare score to 300
+    // compare the %'s, here the game is perfect games so we can just compare
+    // score to 300
     for (unsigned int i = 0; i < output_games.size(); ++i) {
         if (output_games[i].getScore() != PERFECT_GAME) {
             return false;
@@ -1044,7 +1124,8 @@ bool TESTER::testSimulation() {
     }
     sim = Simulator(input_games);
     output_games = sim.makeGames(numTrials);
-    // compare the %'s, here all of the games are perfect games so we can just compare score to 300
+    // compare the %'s, here all of the games are perfect games so we can just
+    // compare score to 300
     for (unsigned int i = 0; i < output_games.size(); ++i) {
         if (output_games[i].getScore() != PERFECT_GAME) {
             return false;
