@@ -117,6 +117,8 @@ bool sameDistB2(Ball2Map& inputB2Map, double iB2MapSize, Ball2Map& outputB2Map,
 }
 
 /**
+    This intializes the file names that will be used in the tests. The number
+    of passed and total tests are set to 0.
 */
 TESTER::TESTER() {
     totalPasses = totalTests = 0;
@@ -131,6 +133,14 @@ TESTER::TESTER() {
 }
 
 /**
+    This method is used to run all of the tests. When a test is passed,
+    totalPasses is increased and a sucess message is printed. When a failure
+    occurs a message is printed. After either the totalTests is increased. The
+    tests include: reading in data from files, calculating the score of games,
+    the creation if the first ball distribution, the creation of the second
+    ball distribution, chosing a random first ball, chosing a random second
+    ball, and simulating a large number of games. After all of the tests, the
+    total number of passes is shown with the number of total tests.
 */
 void TESTER::Test() {
     // test the readIn constructor
@@ -201,6 +211,18 @@ void TESTER::Test() {
 }
 
 /**
+    This method tests that the data is being read in correctly. The method
+    returns true when all of the tests pass and false if at least one fails.
+    The games' constructor is called to read the data in. To see if the game
+    was read in correctly, we compare the games' frames to what they should be.
+    In a perfect game there are 12 strikes and if there are any missing or any
+    pins are marked as still up then it will fail. The same is true for the
+    rest of the games tested. If they don't match the score of the pins knocked
+    down or the pins that are still up then the test fails
+    @return true - All of the files tested have the correct game created from
+    the data file.
+    @return false - One or more of the files tested do not create a game that
+    match what should be created.
 */
 bool TESTER::testReadIn() {
     // test a perfect game
@@ -363,6 +385,11 @@ bool TESTER::testReadIn() {
 }
 
 /**
+    This mehtod tests that the score calculation is working. If the score
+    differs than what is expected then the test will fail. Scores range from 0
+    to 300.
+    @return true - The games tested were scored as they should.
+    @return fasle - One or more games were not scored as they should.
 */
 bool TESTER::testCalcScore() {
     // test a perfect game
@@ -386,6 +413,17 @@ bool TESTER::testCalcScore() {
 }
 
 /**
+    This method tests that the first ball distribution matches the distribution
+    in the file. So if there were three strikes in the file the distribution
+    created also has three strikes and the same for all other frames. For each
+    file the test creates a game and creates a ball 1 distribution. Then each
+    of the types of frames are checked strikes, 9 (ten pin), 9 (nine pin), ...
+    are compard to the known quantities. If those quanties differ then the case
+    fails.
+    @return true - All of the first ball distributions are the same as the
+    known quantities.
+    @return fasle - One or more of the first ball distributions differ than the
+    known quantities.
 */
 bool TESTER::testBall1Dist() {
     std::vector<Game> games;
@@ -473,6 +511,17 @@ bool TESTER::testBall1Dist() {
 }
 
 /**
+    This method tests that the second ball distribution matches the
+    distribution in the file. So if there were three 9- (10 pin) in the file
+    the distribution created also has three 9- (10 pin) and the same for all
+    other frames. For each file the test creates a game and creates a ball 2
+    distribution. Then each of the types of frames are checked, 9 (ten pin)
+    miss, 9 (ten pin) convert, 9 (nine pin) miss, ... are compard to the known
+    quantities. If those quanties differ then the case fails.
+    @return true - All of the second ball distributions are the same as the
+    known quantities.
+    @return fasle - One or more of the second ball distributions differ than
+    the known quantities.
 */
 bool TESTER::testBall2Dist() {
     std::vector<Game> games;
@@ -643,6 +692,19 @@ bool TESTER::testBall2Dist() {
 }
 
 /**
+    This method tests that the random first balls are created correctly. That
+    means that the random balls are in the distribution the correct porportion.
+    So in a distribution from perfect game(s) that there are only strikes. In a
+    game that there are three strikes and eleven possible first balls that the
+    distribution created has ~27% strikes. Each game tested has 1000 first
+    balls chosen randomly from its distribution. If all of the different first
+    balls of that game have the same composistion in both the origonal game and
+    in the distribution then it passed. To be the same they have to be within a
+    margin of error of ±10%. If not then the test fails.
+    @return true - All of the distributions create first balls at the rate of
+    the games used to make the distribution.
+    @return false - One or more of the distributions create first balls at
+    different rate than the games used to make the distribution.
 */
 bool TESTER::testRandBall1() {
     int numTest = 1000;
@@ -832,6 +894,18 @@ bool TESTER::testRandBall1() {
 }
 
 /**
+    This method tests that the random second balls are created correctly. That
+    means that the random balls are in the distribution the correct porportion.
+    In a game that has two 9- and two 9/ involving ten pins, a miss or a
+    conversion will each be 50%. Each game tested has 1000 second balls chosen
+    randomly from its distribution. If all of the different second balls of
+    that game have the same composistion in both the origonal game and in the
+    distribution then it passed. To be the same they have to be within a margin
+    of error of ±10%. If not then the test fails.
+    @return true - All of the distributions create second balls at the rate of
+    the games used to make the distribution.
+    @return false - One or more of the distributions create second balls at
+    different rate than the games used to make the distribution.
 */
 bool TESTER::testRandBall2() {
     int numTest = 1000;
@@ -1100,6 +1174,18 @@ bool TESTER::testRandBall2() {
 }
 
 /**
+    This method tests that games can be created randomly. For each of the
+    sample games a distribution, d, is created (and at the end all of the games
+    are used to make a sinlge distribution). Then a large set of random games
+    are created from the distribution. Then the set of games is used to make a
+    new distribution, d'. For a sample to pass, its d and d' need to have
+    frames occur at the same rate ±10%. Other wise it fails because the two
+    distributions differ too much, meaning there are two different underlying
+    distributions.
+    @return true - The random games created can combine into a distribution
+    that matches the starting distribution.
+    @return false - The random games created cannot combine into a distribution
+    that matches the starting distribution.
 */
 bool TESTER::testSimulation() {
     int numTrials = 100;
