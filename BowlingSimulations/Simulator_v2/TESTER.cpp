@@ -1318,3 +1318,14 @@ bool TESTER::testSimulation() {
 
     return true;
 }
+
+/**
+
+*/
+bool TESTER::testBakerConstruction() {
+
+
+    return true;
+}
+
+

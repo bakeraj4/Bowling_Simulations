@@ -219,7 +219,7 @@ std::vector<unsigned int> Simulator::getBall1PinsUp() {
     provided ball1 is a strike an empty ball2 is returned. There is an error
     case. It happens when the provided ball 1 was a fill ball, the third, in a
     tenth frame. That means that the fill ball never got a spare attempt. If
-    that b1 didn't appear any where else means that there is no b2 in the ball2
+    that b1 didn't appear any where that means that there is no b2 in the ball2
     distribution and an error ball2 is returned.
     @param ball1 - the first ball to get a ball2 for.
     @return ball2 - the randomly chosen ball 2 to use.
@@ -346,14 +346,282 @@ Game Simulator::makeGame() {
 /**
     This method is used to create numGames many games. The number is assumed to
     be greater than 0. The games are made one by one and placed in to gmaes.
+    @param numGames - The number of simulated games to make. 
     @return games - the vector containing numGames many, randomly constructed
-    games
+    games.
 */
 std::vector<Game> Simulator::makeGames(int numGames) {
     std::vector<Game> games;
 
     for (int i = 0; i < numGames; ++i) {
         games.push_back(makeGame());
+    }
+
+    return games;
+}
+
+/**
+    This constructor for the Baker_Simulator class takes games as the games to
+    make ball 1 and 2 distributions. The games are seperated by player. It
+    first makes a new instance of Random. Then it copies the games over then
+    makes the distributions for each player. The default line up for the baker
+    games are the first five players in the vector.
+    @param allPlayersGames - The games to pull data from. The set of games at
+    location i belong to the ith player.
+*/
+Baker_Simulator::Baker_Simulator(std::vector<std::vector<Game>>& allPlayersGames) {
+    r = Random();
+    std::vector<Game> playerGames = std::vector<Game>();
+    ball1Dists = std::vector<Ball1Map>();
+    ball2Dists = std::vector<Ball2Map>();
+
+    // add each players gaems to the distribution
+    for (unsigned int i = 0; i < allPlayersGames.size(); ++i) {
+        ball1Dists.push_back(r.getBall1Totals(allPlayersGames[i]));
+        ball2Dists.push_back(r.getBall2Totals(allPlayersGames[i]));
+    }
+    
+    playerOrder = std::vector<unsigned int>();
+    // deafult to people in order
+    setPos(0, 1, 2, 3, 4);
+}
+
+/*
+    This method is used to change the line up for baker games. The five
+    posistions need to be set. The lead off bowls the first and sixth frames.
+    The second bowler has the second and seventh frame. The third bowls the
+    third and eighth frames. The set up bowler has the fourth and the ninth
+    frame. The anchor bowls the fifth and tenth frame.
+    @param leadOff - The first bowler.
+    @param second - The second bowler.
+    @param third - The third bowler.
+    @param setUp - The fourth bowler.
+    @param anchor - The fifth bowler.
+*/
+void Baker_Simulator::setPos(unsigned int leadOff, unsigned int second, unsigned int third, unsigned int setUp, unsigned int anchor) {
+    playerOrder.clear();
+    playerOrder.push_back(leadOff); // frames 1,6
+    playerOrder.push_back(second);  // frames 2,7
+    playerOrder.push_back(third);   // frames 3,8
+    playerOrder.push_back(setUp);   // frames 4,9
+    playerOrder.push_back(anchor);  // frames 5,10
+}
+
+/**
+    This method is used to get a random ball 1 for the player in the
+    playerOrder[bowler]. It first counts the number of first balls in the
+    distribution for that player. Then a random 'index' in their map is chosen.
+    Then it goes back through their distribution and once it finds the ball 1
+    and the method returns it.
+    @param bowler - The player's posistion in the baker game line up.
+    @return ball1 - the randomly chosen ball 1 to use.
+*/
+std::vector<unsigned int> Baker_Simulator::getBall1PinsUp(unsigned int bowler) {
+
+    Ball1Map ball1Dist = ball1Dists[playerOrder[bowler]];
+
+    // count the number of ball 1's in the distribution
+    int b1 = 0;
+    for (unsigned int i = 0; i < ball1Dist.size(); ++i) {
+        for (auto it = ball1Dist[i].begin(); it != ball1Dist[i].end(); ++it) {
+            b1 += it->second;
+        }
+    }
+
+    // choose the 'index' of the random ball
+    int r = std::rand() % b1; // random number to choose the ball
+    b1 = 0; // reset the counter for the next loop
+
+    std::vector<unsigned int> ball1 = std::vector<unsigned int>();
+    for (unsigned int i = 0; i < ball1Dist.size(); ++i) {
+        for (auto it = ball1Dist[i].begin(); it != ball1Dist[i].end(); ++it) {
+            b1 += it->second;
+            if (b1 > r) {
+                // we found our first ball
+                ball1 = it->first;
+                i = ball1Dist.size(); // to kill the loop
+                break;
+            }
+        }
+    }
+
+    return ball1;
+}
+
+/**
+    This method is used to get a random ball 2 for the player in the
+    playerOrder[bowler]. It first counts the number of second balls in the
+    distribution for that player that have the provided ball 1. Then a random
+    'index' in their map is chosen. Then it goes back through their
+    distribution and once it finds the ball 2 and the method returns it. If the
+    provided ball1 is a strike an empty ball2 is returned. There is an error
+    case. It happens when the provided ball 1 was a fill ball, the third, in a
+    tenth frame. That means that the fill ball never got a spare attempt. If
+    that b1 didn't appear any where that means that there is no b2 in the ball2
+    distribution and an error ball2 is returned.
+    @param bowler - The player's posistion in the baker game line up.
+    @param ball1 - the first ball to get a ball2 for.
+    @return ball2 - the randomly chosen ball 2 to use.
+*/
+std::vector<unsigned int> Baker_Simulator::getBall2PinsUp(unsigned int bowler, std::vector<unsigned int>& ball1) {
+
+    if (ball1.size() == 0) {
+        // if a strike, then nothing needs to be done
+        return std::vector<unsigned int>();
+    }
+
+    Ball2Map ball2Dist = ball2Dists[playerOrder[bowler]];
+
+    unsigned int ball1Count = STRIKE - ball1.size(); // 10 - #pins still up
+    std::map<std::vector<unsigned int>, int> possibleBall2s;
+    int counter = 0;
+
+    for (std::map<Ball2MapKey, int>::iterator
+        it = ball2Dist[ball1Count].begin(); it != ball2Dist[ball1Count].end();
+        ++it) {
+
+        if (it->first.first == ball1) {
+            // if the input and this (key, val) have the same first ball
+            std::vector<unsigned int> pins;
+            for (int i = 0; i < it->first.second.size(); ++i) {
+                // copy over the second ball results
+                pins.push_back(it->first.second[i]);
+            }
+            possibleBall2s[pins] = it->second;
+            // b/c unique key we know that no other of the second part of the
+            // key can be added
+            counter += possibleBall2s[pins];
+        }
+    }
+
+    // This case occurs when the input ball 1 is not in the map. This can
+    // occur when that input ball was only a fill ball in the tenth frame.
+    if (counter == 0) {
+        std::vector<unsigned int> err;
+        for (int i = 0; i < ERROR_SIZE; ++i) {
+            err.push_back(i);
+        }
+        return err;
+        // spare shot cannot be found. the input had to be a fill ball only
+    }
+
+    // now chose one of the vectors randomly
+    int r = std::rand() % counter;
+    counter = 0;
+    std::vector<unsigned int> ball2 = std::vector<unsigned int>();
+
+    // find the random ball 2
+    for (std::map<std::vector<unsigned int>, int>::iterator
+        it = possibleBall2s.begin(); it != possibleBall2s.end(); ++it) {
+
+        counter += it->second;
+        if (counter > r) {
+            ball2 = it->first;
+            it = possibleBall2s.end(); // kills the loop
+            break;
+        }
+    }
+
+    return ball2;
+}
+
+/**
+    This method is used to make a random game. There is a counter to iterate
+    through the players twice. This way they are bowling the frame they are
+    supposed to ([0] -> 1st & 6th, ...). The first 9 frames are created first.
+    A random b1 and b2 are chosen and rechosen until a non fill ball was chosen
+    as a b1. See getBall2PinsUp()'s documentation why a fill ball may not be in
+    the ball2 distribution. Then the tenth frame is handled in the same way
+    choose and rechoose if fill ball was chosen. the first ball of the tenth is
+    chosen. If a strike then another first ball is chosen for the second. If
+    that is a strike then another first ball is chosen for the third ball,
+    otherwise a second ball is chosen. If the first ball wasn't a strike, then
+    and second ball is chosen. If a spare is made then a first ball is chosen
+    for the third ball.
+    @return a randomly created game by the five players.
+*/
+Game Baker_Simulator::makeGame() {
+
+    std::vector<Frame> frames = std::vector<Frame>();
+    unsigned int currentBowler = 0;
+
+    // handle 1st to 9th frames
+    for (int f = 0; f < 9; ++f) {
+        std::vector<unsigned int> b1, b2;
+        do {
+            b1 = getBall1PinsUp(currentBowler);
+            b2 = getBall2PinsUp(currentBowler, b1);
+        } while (b2.size() == ERROR_SIZE);
+        frames.push_back(Frame(b1, b2));
+        // update the current bowler. [0, 4]
+        currentBowler = (1 + currentBowler) % 5;
+    }
+
+    // handle the 10th frame
+    std::vector<unsigned int> b1, b2, b3;
+    do {
+        b1 = getBall1PinsUp(currentBowler);
+        if (b1.size() == 0) {
+            // there was a strike
+            b2 = getBall1PinsUp(currentBowler);
+            if (b2.size() == 0) {
+                // another strike
+                b3 = getBall1PinsUp(currentBowler);
+            }
+            else if (b2.size() < STRIKE) { // left pins up
+                // get a spare shot
+                b3 = getBall2PinsUp(currentBowler, b2);
+            } // else the b2 was an error case.
+        }
+        else {
+            // get a spare shot
+            b2 = getBall2PinsUp(currentBowler, b1);
+            if (b2.size() == 0) {
+                // spare was made and we get the fill ball
+                b3 = getBall1PinsUp(currentBowler);
+            }
+            else {
+                // initlaize to empty vector
+                b3 = std::vector<unsigned int>();
+            }
+        }
+    } while (b2.size() == ERROR_SIZE);
+
+    frames.push_back(Frame(b1, b2, b3));
+
+    return Game(frames);
+}
+
+/*
+    This method is used to create gamesToMake many games. The number is assumed
+    to be greater than 0. The games are made one by one and placed in to gmaes.
+    @param gamesToMake - The number of simulated games to make. 
+    @return games - the vector containing numGames many, randomly constructed
+    games.
+*/
+std::vector<Game> Baker_Simulator::makeGames(int gamesToMake) {
+    std::vector<Game> games;
+
+    for (unsigned int i = 0; i < gamesToMake; ++i) {
+        games.push_back(makeGame());
+    }
+
+    return games;
+}
+
+std::vector<Game> Baker_Simulator::makeGamesWithSwaps(int gamesToMake, unsigned int gamesBeforeSwap) {
+    std::vector<Game> games;
+
+    // how to consider swaping people in and out?
+    // ....................... posistions if someone gets hot and should become anchor?
+    // ....................... so someone dosen't get too cold?
+
+    for (int i = 0, s = 0; i < gamesToMake; ++i, ++s) {
+        if (s == gamesBeforeSwap) {
+            // determine if need to swap
+                // if so whom
+            s = 0;
+        }
     }
 
     return games;

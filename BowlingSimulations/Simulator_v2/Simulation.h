@@ -41,3 +41,20 @@ class Simulator {
         // can make futuer delimaters like pattern, date range, etc
 
 };
+
+class Baker_Simulator {
+    private:
+        std::vector<Ball1Map> ball1Dists;
+        std::vector<Ball2Map> ball2Dists;
+        std::vector<unsigned int> playerOrder;
+        Random r;
+        Game makeGame();
+    public:
+        Baker_Simulator(std::vector<std::vector<Game>>& allPlayersGames);
+        void setPos(unsigned int leadOff, unsigned int second, unsigned int third, unsigned int setUp, unsigned int anchor);
+        std::vector<unsigned int> getBall1PinsUp(unsigned int bowler);
+        std::vector<unsigned int> getBall2PinsUp(unsigned int bowler, std::vector<unsigned int>& ball1);
+        std::vector<Game> makeGames(int gamesToMake);
+        std::vector<Game> makeGamesWithSwaps(int gamesToMake, unsigned int gamesBeforeSwap);
+
+};
